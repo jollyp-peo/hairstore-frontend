@@ -16,8 +16,9 @@ import NotFound from "./pages/NotFound.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import AuthCallback from "./pages/AuthCallback.jsx";
-import AdminDashboard from "./pages/AdminDashboard.jsx";
 import PaymentCallback from "./pages/PaymentCallback";
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
+import ProductsPage from "./pages/admin/ProductsPage.jsx";
 
 // Routes
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -25,6 +26,7 @@ import { AdminRoute } from "./components/AdminRoute.jsx";
 
 // Context
 import { AuthProvider } from "./context/AuthContext.jsx";
+import ProductEdit from "./pages/admin/ProductEdit.jsx";
 
 const App = () => {
 	return (
@@ -42,6 +44,9 @@ const App = () => {
 						<Route path="/products/:id" element={<ProductDetail />} />
 						<Route path="/cart" element={<Cart />} />
 						<Route path="/payment/callback" element={<PaymentCallback />} />
+						<Route path="/admin" element={<AdminDashboard />} />
+						<Route path="/admin/products" element={<ProductsPage />} />
+						<Route path="/admin/products/edit/:id" element={<ProductEdit />} />
 
 						{/* Protected */}
 						<Route
@@ -53,7 +58,7 @@ const App = () => {
 							}
 						/>
 
-						{/* Admin */}
+						{/* Admin
 						<Route
 							path="/admin/*"
 							element={
@@ -61,7 +66,7 @@ const App = () => {
 									<AdminDashboard />
 								</AdminRoute>
 							}
-						/>
+						/> */}
 
 						{/* Catch all */}
 						<Route path="*" element={<NotFound />} />
