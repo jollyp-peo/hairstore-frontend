@@ -147,17 +147,17 @@ const Products = () => {
 							placeholder="Search products..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
-							className="w-full pl-10 pr-4 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+							className="w-full pl-10 pr-4 py-3 border border-border text-primary rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
 						/>
 					</div>
 
 					{/* Filters */}
-					<div className="flex flex-wrap gap-4 items-center">
+					<div className="flex flex-wrap gap-4 items-center text-primary">
 						{/* Category Filter */}
 						<select
 							value={selectedCategory}
 							onChange={(e) => setSelectedCategory(e.target.value)}
-							className="px-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+							className="px-4 py-2 border border-border rounded-lg bg-background text-primary focus:outline-none focus:ring-2 focus:ring-primary"
 						>
 							{categories.map((category) => (
 								<option key={category.id} value={category.id}>
@@ -170,7 +170,7 @@ const Products = () => {
 						<select
 							value={sortBy}
 							onChange={(e) => setSortBy(e.target.value)}
-							className="px-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+							className="px-4 py-2 border border-border rounded-lg bg-background text-primary focus:outline-none focus:ring-2 focus:ring-primary"
 						>
 							{sortOptions.map((option) => (
 								<option key={option.id} value={option.id}>
