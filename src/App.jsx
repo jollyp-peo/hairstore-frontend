@@ -15,7 +15,6 @@ import Checkout from "./pages/Checkout.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
-import AuthCallback from "./pages/AuthCallback.jsx";
 import PaymentCallback from "./pages/PaymentCallback";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import ProductsPage from "./pages/admin/ProductsPage.jsx";
@@ -39,7 +38,6 @@ const App = () => {
 						<Route path="/" element={<Home />} />
 						<Route path="/login" element={<Login />} />
 						<Route path="/register" element={<Register />} />
-						<Route path="/auth/callback" element={<AuthCallback />} />
 						<Route path="/products" element={<Products />} />
 						<Route path="/products/:id" element={<ProductDetail />} />
 						<Route path="/cart" element={<Cart />} />
