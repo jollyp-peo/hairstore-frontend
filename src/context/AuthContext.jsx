@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useMemo } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const AuthContext = createContext();
@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Signup failed");
-    
+
       saveSession(data);
       return { success: true };
     } catch (err) {
@@ -113,14 +113,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // --- Auto refresh before expiry (optional improvement) ---
+  // --- Auto refresh before expiry ---
   useEffect(() => {
     let interval;
     if (refreshToken) {
-      interval = setInterval(() => refresh(), 10 * 60 * 1000); // refresh every 10 mins
+      interval = setInterval(() => refresh(), 10 * 60 * 1000); // every 10 mins
     }
     return () => clearInterval(interval);
   }, [refreshToken]);
+
+  // --- Role helpers ---
+  const isAdmin = useMemo(() => {
+    return user?.role === "admin"; 
+  }, [user]);
 
   return (
     <AuthContext.Provider
@@ -132,6 +137,7 @@ export const AuthProvider = ({ children }) => {
         signup,
         refresh,
         logout,
+        isAdmin,
       }}
     >
       {children}

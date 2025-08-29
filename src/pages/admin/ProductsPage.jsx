@@ -16,7 +16,7 @@ const ProductsPage = () => {
 					<div>
 						<h1 className="text-3xl lg:text-4xl font-bold mb-2">{view === "list" ? "List Products" : "Upload Products"}</h1>
 						<p className="text-white/90">
-							Manage your products: view, edit, or upload new ones
+							{view === "list" ? "Manage your products: view, edit, or update products" : "Manage your products: upload new products"}
 						</p>
 					</div>
 

@@ -1,33 +1,31 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from "react";
 
 const CartContext = createContext();
 export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState(() => {
-    // Load from localStorage on first load
-    const stored = localStorage.getItem('cart');
+    const stored = localStorage.getItem("cart");
     return stored ? JSON.parse(stored) : [];
   });
 
-  // Save to localStorage whenever cartItems change
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartItems));
+    localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
   const addToCart = (product, options = {}) => {
     const { quantity = 1, length = null, color = null } = options;
 
-    setCartItems(prev => {
+    setCartItems((prev) => {
       const existing = prev.find(
-        item =>
+        (item) =>
           item.id === product.id &&
           item.length === length &&
           item.color === color
       );
 
       if (existing) {
-        return prev.map(item =>
+        return prev.map((item) =>
           item.id === product.id &&
           item.length === length &&
           item.color === color
@@ -36,13 +34,24 @@ export const CartProvider = ({ children }) => {
         );
       }
 
-      return [...prev, { ...product, quantity, length, color }];
+      return [
+        ...prev,
+        {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          quantity,
+          length,
+          color,
+        },
+      ];
     });
   };
 
   const updateQuantity = (productId, length, color, newQuantity) => {
-    setCartItems(prev =>
-      prev.map(item =>
+    setCartItems((prev) =>
+      prev.map((item) =>
         item.id === productId &&
         item.length === length &&
         item.color === color
@@ -53,12 +62,14 @@ export const CartProvider = ({ children }) => {
   };
 
   const removeFromCart = (productId, length, color) => {
-    setCartItems(prev =>
+    setCartItems((prev) =>
       prev.filter(
-        item =>
-          !(item.id === productId &&
+        (item) =>
+          !(
+            item.id === productId &&
             item.length === length &&
-            item.color === color)
+            item.color === color
+          )
       )
     );
   };
