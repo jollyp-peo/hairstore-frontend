@@ -1,32 +1,45 @@
-import { useState, useEffect, useRef } from "react";
+// pages/ProductDetail.jsx
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   Star,
   ShoppingCart,
-  Heart,
-  Share2,
-  Truck,
-  Shield,
-  RotateCcw,
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  CheckCircle,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { useCart } from "../context/CartContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const ProductDetail = () => {
+export default function ProductDetail() {
   const { id } = useParams();
   const { addToCart } = useCart();
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedLength, setSelectedLength] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
+
+  // option selections (start as null, no defaults)
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [selectedLength, setSelectedLength] = useState(null);
+  const [selectedLace, setSelectedLace] = useState(null);
+
+  // toggles to show option panels
+  const [showColors, setShowColors] = useState(false);
+  const [showLengths, setShowLengths] = useState(false);
+  const [showLaces, setShowLaces] = useState(false);
+
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [product, setProduct] = useState(null);
   const [activeTab, setActiveTab] = useState("description");
+
+  // toast state
+  const [toast, setToast] = useState({ open: false, type: "success", message: "" });
+  const toastTimerRef = useRef(null);
 
   const scrollRef = useRef(null);
 
@@ -40,37 +53,108 @@ const ProductDetail = () => {
     }
   };
 
+  // helper: show toast
+  const showToast = (message, type = "success") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ open: true, type, message });
+    toastTimerRef.current = setTimeout(() => {
+      setToast((t) => ({ ...t, open: false }));
+    }, 3000);
+  };
+
   useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  // fetch product
+  useEffect(() => {
+    let mounted = true;
+
     const fetchProduct = async () => {
       try {
         const res = await fetch(`${API_URL}/api/products/${id}`);
-        const data = await res.json();
+        const result = await res.json();
 
-        const details = data.product_details?.[0] || {};
-        const normalized = { ...data, details };
+        if (!res.ok || !result.success) throw new Error(result?.error || "Failed to load product");
+        if (!mounted) return;
 
-        setProduct(normalized);
-
-        if (details?.options?.lengths?.length > 0) {
-          setSelectedLength(details.options.lengths[0]);
-        }
-        if (details?.options?.colors?.length > 0) {
-          setSelectedColor(details.options.colors[0]);
-        }
+        setProduct(result.data);
       } catch (err) {
         console.error("Failed to load product", err);
+        showToast("Failed to load product. Please try again.", "error");
       }
     };
 
     fetchProduct();
+    return () => {
+      mounted = false;
+    };
   }, [id]);
+
+  // recompute selectedVariant only when all three selections are chosen
+  useEffect(() => {
+    if (!product?.variants?.length) return;
+    if (!selectedColor || !selectedLength || !selectedLace) {
+      setSelectedVariant(null);
+      return;
+    }
+
+    const match = product.variants.find(
+      (v) => v.color === selectedColor && v.length === selectedLength && v.lace === selectedLace
+    );
+
+    setSelectedVariant(match || null);
+  }, [selectedColor, selectedLength, selectedLace, product]);
+
+  // unique options
+  const colors = useMemo(() => {
+    if (!product?.variants) return [];
+    return [...new Set(product.variants.map((v) => v.color).filter(Boolean))];
+  }, [product]);
+
+  const lengths = useMemo(() => {
+    if (!product?.variants) return [];
+    return [...new Set(product.variants.map((v) => v.length).filter(Boolean))];
+  }, [product]);
+
+  const laces = useMemo(() => {
+    if (!product?.variants) return [];
+    return [...new Set(product.variants.map((v) => v.lace).filter(Boolean))];
+  }, [product]);
+
+  // availability helpers
+  const isColorAvailable = (color) =>
+    product?.variants?.some(
+      (v) =>
+        v.color === color &&
+        (!selectedLength || v.length === selectedLength) &&
+        (!selectedLace || v.lace === selectedLace)
+    );
+
+  const isLengthAvailable = (length) =>
+    product?.variants?.some(
+      (v) =>
+        v.length === length &&
+        (!selectedColor || v.color === selectedColor) &&
+        (!selectedLace || v.lace === selectedLace)
+    );
+
+  const isLaceAvailable = (lace) =>
+    product?.variants?.some(
+      (v) =>
+        v.lace === lace &&
+        (!selectedColor || v.color === selectedColor) &&
+        (!selectedLength || v.length === selectedLength)
+    );
 
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Loading Product...</h1>
-          <Button asChild>
+          <Button>
             <Link to="/products">Back to Products</Link>
           </Button>
         </div>
@@ -78,15 +162,33 @@ const ProductDetail = () => {
     );
   }
 
-  const lengthOptions = product?.details?.options?.lengths || [];
-  const colorOptions = product?.details?.options?.colors || [];
+  const allImages = [
+    product.cover_image,
+    ...(product.variants?.map((v) => v.image).filter(Boolean) || []),
+  ];
 
+  // Add to Cart
   const handleAddToCart = () => {
-    addToCart(product, {
-      quantity,
-      length: selectedLength,
-      color: selectedColor,
-    });
+    if (!selectedVariant) {
+      showToast("Please select a valid Color, Length, and Lace.", "error");
+      return;
+    }
+
+    addToCart(product, { variant: selectedVariant, quantity });
+
+    showToast(
+      `Added to cart: ${product.name} — ${selectedVariant.color || "-"}, ${selectedVariant.length || "-"}, ${selectedVariant.lace || "-"} × ${quantity}`,
+      "success"
+    );
+  };
+
+  const resetSelections = () => {
+    setSelectedColor(null);
+    setSelectedLength(null);
+    setSelectedLace(null);
+    setSelectedVariant(null);
+    setQuantity(1);
+    showToast("Selections cleared.", "success");
   };
 
   return (
@@ -120,22 +222,10 @@ const ProductDetail = () => {
           <div className="space-y-4">
             <div className="aspect-square rounded-2xl overflow-hidden bg-card shadow-card relative">
               <img
-                src={
-                  selectedImage === 0
-                    ? product.image
-                    : product.details?.images?.[selectedImage - 1]
-                }
+                src={allImages[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
-
-              {/* Color overlay to simulate preview */}
-              {selectedColor && (
-                <div
-                  className="absolute inset-0 opacity-20 mix-blend-multiply"
-                  style={{ backgroundColor: selectedColor }}
-                />
-              )}
             </div>
 
             {/* Thumbnails */}
@@ -151,27 +241,12 @@ const ProductDetail = () => {
                 ref={scrollRef}
                 className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth"
               >
-                <button
-                  onClick={() => setSelectedImage(0)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
-                    selectedImage === 0 ? "border-primary" : "border-transparent"
-                  }`}
-                >
-                  <img
-                    src={product.image}
-                    alt="cover"
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-
-                {product.details?.images?.map((img, i) => (
+                {allImages.map((img, i) => (
                   <button
                     key={i}
-                    onClick={() => setSelectedImage(i + 1)}
+                    onClick={() => setSelectedImage(i)}
                     className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
-                      selectedImage === i + 1
-                        ? "border-primary"
-                        : "border-transparent"
+                      selectedImage === i ? "border-amber-400" : "border-transparent"
                     }`}
                   >
                     <img
@@ -195,12 +270,8 @@ const ProductDetail = () => {
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              <p className="text-sm text-primary font-medium mb-2">
-                {product.category}
-              </p>
-              <h1 className="text-3xl lg:text-4xl font-bold mb-4">
-                {product.name}
-              </h1>
+              <p className="text-sm text-primary font-medium mb-2">{product.category}</p>
+              <h1 className="text-3xl lg:text-4xl font-bold mb-4">{product.name}</h1>
 
               {/* Rating */}
               <div className="flex items-center gap-4 mb-4">
@@ -223,83 +294,189 @@ const ProductDetail = () => {
 
               {/* Price */}
               <div className="flex items-center gap-4 mb-6">
-                <span className="text-3xl font-bold text-primary">
-                  {product.price.toLocaleString("en-NG", {
-                    style: "currency",
-                    currency: "NGN",
-                  })}
-                </span>
+                {selectedVariant ? (
+                  <>
+                    <span className="text-3xl font-bold text-primary">
+                      {selectedVariant.price.toLocaleString("en-NG", {
+                        style: "currency",
+                        currency: "NGN",
+                      })}
+                    </span>
+                    {selectedVariant.original_price && (
+                      <span className="line-through text-muted-foreground">
+                        {selectedVariant.original_price.toLocaleString("en-NG", {
+                          style: "currency",
+                          currency: "NGN",
+                        })}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-lg font-medium text-muted-foreground">
+                    Select options to see price
+                  </p>
+                )}
               </div>
             </div>
 
-            {/* Options */}
+            {/* Variant Selectors */}
             <div className="space-y-4">
-              {lengthOptions.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Length
-                  </label>
-                  <div className="flex gap-2 flex-wrap">
-                    {lengthOptions.map((length) => (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowColors((s) => !s);
+                    setShowLengths(false);
+                    setShowLaces(false);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-border hover:border-amber-400"
+                >
+                  Color {selectedColor ? `: ${selectedColor}` : ""}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowLengths((s) => !s);
+                    setShowColors(false);
+                    setShowLaces(false);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-border hover:border-amber-400"
+                >
+                  Length {selectedLength ? `: ${selectedLength}` : ""}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowLaces((s) => !s);
+                    setShowColors(false);
+                    setShowLengths(false);
+                  }}
+                  className="px-4 py-2 rounded-lg border border-border hover:border-amber-400"
+                >
+                  Lace {selectedLace ? `: ${selectedLace}` : ""}
+                </button>
+
+                <button onClick={resetSelections} className="ml-auto text-sm underline">
+                  Reset
+                </button>
+              </div>
+
+              {/* Color options panel */}
+              {showColors && (
+                <div className="mt-2 grid grid-cols-3 md:grid-cols-6 gap-2">
+                  {colors.map((c) => {
+                    const available = isColorAvailable(c);
+                    const active = c === selectedColor;
+                    return (
                       <button
-                        key={length}
-                        onClick={() => setSelectedLength(length)}
-                        className={`px-4 py-2 border rounded-lg transition ${
-                          selectedLength === length
-                            ? "border-amber-400 bg-primary text-primary-foreground shadow-lg"
-                            : "border-border hover:border-primary"
+                        key={c}
+                        onClick={() => {
+                          if (!available) return;
+                          setSelectedColor(c);
+                          setShowColors(false);
+                        }}
+                        disabled={!available}
+                        className={`px-3 py-2 rounded-lg border text-sm transition ${
+                          active
+                            ? "border-amber-400 bg-amber-50"
+                            : available
+                            ? "border-border hover:border-amber-400"
+                            : "opacity-40 cursor-not-allowed"
                         }`}
                       >
-                        {length}
+                        {c}
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
 
-              {colorOptions.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">Color</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {colorOptions.map((color) => (
+              {/* Length options panel */}
+              {showLengths && (
+                <div className="mt-2 grid grid-cols-3 md:grid-cols-6 gap-2">
+                  {lengths.map((l) => {
+                    const available = isLengthAvailable(l);
+                    const active = l === selectedLength;
+                    return (
                       <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={`px-4 py-2 border rounded-lg transition ${
-                          selectedColor === color
-                            ? "border-amber-400 bg-primary text-primary-foreground shadow-lg"
-                            : "border-border hover:border-primary"
+                        key={l}
+                        onClick={() => {
+                          if (!available) return;
+                          setSelectedLength(l);
+                          setShowLengths(false);
+                        }}
+                        disabled={!available}
+                        className={`px-3 py-2 rounded-lg border text-sm transition ${
+                          active
+                            ? "border-amber-400 bg-amber-50"
+                            : available
+                            ? "border-border hover:border-amber-400"
+                            : "opacity-40 cursor-not-allowed"
                         }`}
                       >
-                        {color}
+                        {l}
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
 
-              {/* Quantity */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Quantity
-                </label>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 border border-border rounded-lg flex items-center justify-center hover:border-primary"
-                  >
-                    -
-                  </button>
-                  <span className="w-12 text-center font-medium">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 border border-border rounded-lg flex items-center justify-center hover:border-primary"
-                  >
-                    +
-                  </button>
+              {/* Lace options panel */}
+              {showLaces && (
+                <div className="mt-2 grid grid-cols-3 md:grid-cols-6 gap-2">
+                  {laces.map((lx) => {
+                    const available = isLaceAvailable(lx);
+                    const active = lx === selectedLace;
+                    return (
+                      <button
+                        key={lx}
+                        onClick={() => {
+                          if (!available) return;
+                          setSelectedLace(lx);
+                          setShowLaces(false);
+                        }}
+                        disabled={!available}
+                        className={`px-3 py-2 rounded-lg border text-sm transition ${
+                          active
+                            ? "border-amber-400 bg-amber-50"
+                            : available
+                            ? "border-border hover:border-amber-400"
+                            : "opacity-40 cursor-not-allowed"
+                        }`}
+                      >
+                        {lx}
+                      </button>
+                    );
+                  })}
                 </div>
+              )}
+
+              {/* Small summary */}
+              <div className="text-sm text-muted-foreground">
+                <p>
+                  Selected: <strong>{selectedColor ?? "-"}</strong> /{" "}
+                  <strong>{selectedLength ?? "-"}</strong> /{" "}
+                  <strong>{selectedLace ?? "-"}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Quantity */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Quantity</label>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-10 h-10 border border-border rounded-lg flex items-center justify-center hover:border-amber-400"
+                >
+                  -
+                </button>
+                <span className="w-12 text-center font-medium">{quantity}</span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-10 h-10 border border-border rounded-lg flex items-center justify-center hover:border-amber-400"
+                >
+                  +
+                </button>
               </div>
             </div>
 
@@ -310,13 +487,20 @@ const ProductDetail = () => {
                 size="lg"
                 className="w-full"
                 onClick={handleAddToCart}
+                disabled={!selectedVariant}
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
-                Add to Cart –{" "}
-                {(product.price * quantity).toLocaleString("en-NG", {
-                  style: "currency",
-                  currency: "NGN",
-                })}
+                {selectedVariant ? (
+                  <>
+                    Add to Cart –{" "}
+                    {(selectedVariant.price * quantity).toLocaleString("en-NG", {
+                      style: "currency",
+                      currency: "NGN",
+                    })}
+                  </>
+                ) : (
+                  "Select a valid combination"
+                )}
               </Button>
             </div>
           </div>
@@ -363,24 +547,43 @@ const ProductDetail = () => {
               )}
 
               {activeTab === "specs" && (
-                <div>
+                <ul>
                   {product.details?.specifications?.map((s, i) => (
-                    <p key={i}>
-                      <strong>{s.key}</strong>: {s.value}
-                    </p>
+                    <li key={i}>{s}</li>
                   ))}
-                </div>
+                </ul>
               )}
 
               {activeTab === "reviews" && (
-                <p>Reviews coming soon...</p>
+                <div>
+                  <p>No reviews yet.</p>
+                </div>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Toast */}
+      {toast.open && (
+        <div
+          className={`fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 text-sm ${
+            toast.type === "success"
+              ? "bg-green-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          {toast.type === "success" ? (
+            <CheckCircle className="h-4 w-4" />
+          ) : (
+            <AlertCircle className="h-4 w-4" />
+          )}
+          <span>{toast.message}</span>
+          <button onClick={() => setToast((t) => ({ ...t, open: false }))}>
+            <X className="h-4 w-4 ml-2" />
+          </button>
+        </div>
+      )}
     </div>
   );
-};
-
-export default ProductDetail;
+}

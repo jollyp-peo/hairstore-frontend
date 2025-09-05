@@ -18,19 +18,18 @@ const Products = () => {
   // pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 8; // backend should respect this
+  const itemsPerPage = 8;
 
   const { addToCart } = useCart();
   const navigate = useNavigate();
 
   const categories = [
     { id: "all", name: "All Products" },
-    { id: "extensions", name: "Hair Extensions" },
+    { id: "bundles", name: "Bundles" },
     { id: "wigs", name: "Wigs" },
-    { id: "care", name: "Hair Care" },
+    { id: "care", name: "Hair Products" },
   ];
 
-  // frontend sort → DB mapping
   const sortMap = {
     featured: { column: "featured", ascending: false },
     "price-low": { column: "price", ascending: true },
@@ -39,7 +38,7 @@ const Products = () => {
     newest: { column: "created_at", ascending: false },
   };
 
-  // Debounce search term (500ms)
+  // Debounce search term
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchTerm.trim());
@@ -48,7 +47,6 @@ const Products = () => {
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Fetch products from backend
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -63,49 +61,29 @@ const Products = () => {
       });
 
       if (debouncedSearch) params.set("search", debouncedSearch);
-      // only send category when it is not "all"
       if (selectedCategory && selectedCategory !== "all") {
         params.set("category", selectedCategory);
       }
 
       const url = `${API_URL}/api/products?${params.toString()}`;
-      // debugging help: open browser console, check request/response
       console.debug("[Products] GET", url);
 
       const res = await fetch(url);
-      let data;
-      try {
-        data = await res.json();
-      } catch (parseErr) {
-        console.error("[Products] Failed to parse JSON", parseErr);
-        throw new Error("Invalid JSON response from server");
+      const result = await res.json();
+
+      console.debug("[Products] response", res.status, result);
+
+      if (!res.ok || !result.success) {
+        throw new Error(result?.error || `Server returned ${res.status}`);
       }
 
-      console.debug("[Products] response", res.status, data);
-
-      if (!res.ok) {
-        // if backend sends { error } structure, surface it
-        const errMsg = data?.error || `Server returned ${res.status}`;
-        throw new Error(errMsg);
-      }
-
-      // backend returns { products: [...], pagination: { totalPages, total, page, limit } }
-      const returnedProducts = Array.isArray(data)
-        ? data
-        : data.products || data.items || [];
-
+      const returnedProducts = Array.isArray(result.data) ? result.data : [];
       setProducts(returnedProducts);
 
-      const tp =
-        data?.pagination?.totalPages ??
-        data?.totalPages ??
-        // fallback: compute from total if provided
-        (data?.pagination?.total ? Math.max(1, Math.ceil(data.pagination.total / itemsPerPage)) : 1);
-
-      setTotalPages(tp || 1);
+      const pagination = result.pagination || {};
+      setTotalPages(pagination.totalPages || 1);
     } catch (err) {
       console.error("Error fetching products:", err);
-      // show no products but don't crash UI
       setProducts([]);
       setTotalPages(1);
     } finally {
@@ -113,7 +91,6 @@ const Products = () => {
     }
   };
 
-  // Re-fetch when dependencies change
   useEffect(() => {
     fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -175,8 +152,7 @@ const Products = () => {
               }}
               className="px-4 py-2 border border-border rounded-lg bg-background text-primary focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              {Object.entries(sortMap).map(([id, cfg]) => {
-                // map keys to nice labels (you already had labels)
+              {Object.entries(sortMap).map(([id]) => {
                 const name =
                   id === "featured"
                     ? "Featured"
@@ -224,7 +200,7 @@ const Products = () => {
           </p>
         </div>
 
-        {/* Loading state */}
+        {/* Loading */}
         {loading && <p className="text-center py-8">Loading products...</p>}
 
         {/* Products Grid/List */}
@@ -253,7 +229,7 @@ const Products = () => {
                   }`}
                 >
                   <img
-                    src={product.image || "/placeholder.png"}
+                    src={product.cover_image || "/placeholder.png"}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
@@ -297,18 +273,6 @@ const Products = () => {
                         {product.rating ?? 0} ({product.reviews ?? 0} reviews)
                       </span>
                     </div>
-
-                    {/* Price */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-2xl font-bold text-primary">
-                        {(Number(product.price) || 0).toLocaleString("en-NG", { style: "currency", currency: "NGN" })}
-                      </span>
-                      {product.original_price && (
-                        <span className="text-sm text-muted-foreground line-through">
-                          {(Number(product.original_price) || 0).toLocaleString("en-NG", { style: "currency", currency: "NGN" })}
-                        </span>
-                      )}
-                    </div>
                   </div>
 
                   {/* Actions */}
@@ -317,7 +281,6 @@ const Products = () => {
                       variant="gold"
                       className="flex-1"
                       disabled={!product.in_stock}
-                      // onClick={() => addToCart(product, { quantity: 1 })}
                       onClick={() => navigate(`/products/${product.id}`)}
                     >
                       <ShoppingCart className="h-4 w-4 mr-2" />
@@ -339,7 +302,9 @@ const Products = () => {
             <div className="max-w-md mx-auto">
               <Filter className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No products found</h3>
-              <p className="text-muted-foreground mb-4">Try adjusting your search or filter criteria</p>
+              <p className="text-muted-foreground mb-4">
+                Try adjusting your search or filter criteria
+              </p>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -359,14 +324,15 @@ const Products = () => {
             <Button variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
               Prev
             </Button>
-
-            {/* Numbered Pagination */}
             {Array.from({ length: totalPages }, (_, i) => (
-              <Button key={i + 1} variant={page === i + 1 ? "luxury" : "outline"} onClick={() => setPage(i + 1)}>
+              <Button
+                key={i + 1}
+                variant={page === i + 1 ? "luxury" : "outline"}
+                onClick={() => setPage(i + 1)}
+              >
                 {i + 1}
               </Button>
             ))}
-
             <Button variant="outline" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
               Next
             </Button>

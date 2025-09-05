@@ -67,8 +67,7 @@ const Home = () => {
 							<span className="block text-gradient">Redefined</span>
 						</h1>
 						<p className="text-xl lg:text-2xl text-white/90 mb-8 max-w-2xl mx-auto">
-							Transform your look with our premium collection of hair
-							extensions, wigs, and luxury hair care products.
+							Transform your look with our premium luxury hair collections, Both in wigs, bundles, wholesales and hair care products.
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center">
 							<Button variant="luxury" size="xl">

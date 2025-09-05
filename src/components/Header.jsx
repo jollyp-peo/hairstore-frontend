@@ -103,7 +103,9 @@ const Header = () => {
 						<div
 							className="relative"
 							onMouseEnter={() => setShowUserMenu(true)}
-							onMouseLeave={() => setShowUserMenu(false)}
+							onMouseLeave={() => setTimeout(() => {
+								setShowUserMenu(false)
+							}, 5000)}
 						>
 							<Button 
 								variant="ghost" 
