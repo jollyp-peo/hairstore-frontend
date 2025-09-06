@@ -23,10 +23,12 @@ const Footer = () => {
 					{/* Brand Section */}
 					<div className="space-y-4">
 						<div className="flex items-center space-x-2">
-							<div className="bg-gradient-luxury p-2 rounded-lg shadow-glow">
-								<span className="text-primary-foreground font-bold text-lg">
-									H
-								</span>
+							<div className="bg-gradient-luxury rounded-full border-4 border-amber-500 shadow-glow group-hover:shadow-luxury transition-all duration-300 w-12 h-12 overflow-hidden">
+								<img
+									src="/Hair.png"
+									alt="brand logo"
+									className="w-full h-full object-cover"
+								/>
 							</div>
 							<div>
 								<h2 className="text-xl font-bold text-gradient">
@@ -38,12 +40,15 @@ const Footer = () => {
 							</div>
 						</div>
 						<p className="text-sm text-muted-foreground leading-relaxed">
-							Transform your look with our premium collection of hair
-							extensions, wigs, and luxury hair care products. Quality and
+							Transform your look with our premium collection of hair bundles,
+							closures, wigs, and luxury hair care products. Quality and
 							elegance redefined.
 						</p>
 						<div className="flex space-x-4">
 							<Button
+								href="https://instagram.com/hair.byurban"
+								target="_blank"
+								rel="noopener noreferrer"
 								variant="hero"
 								size="icon"
 								className="cursor-pointer transition-colors duration-200 hover:bg-primary hover:text-primary-foreground"
@@ -52,6 +57,9 @@ const Footer = () => {
 							</Button>
 
 							<Button
+							  href="https://facebook.com/share/19tGUQWYPY"
+								target="_blank"
+								rel="noopener noreferrer"
 								variant="hero"
 								size="icon"
 								className="cursor-pointer transition-colors duration-200 hover:bg-primary hover:text-primary-foreground"
@@ -59,14 +67,17 @@ const Footer = () => {
 								<FaFacebookF className="h-5 w-5" />
 							</Button>
 
-							<Button
+							{/* <Button
 								variant="hero"
 								size="icon"
 								className="cursor-pointer transition-colors duration-200 hover:bg-primary hover:text-primary-foreground"
 							>
 								<FaXTwitter className="h-5 w-5" />
-							</Button>
+							</Button> */}
 							<Button
+							  href="https://tiktok.com/@hair.by.urban"
+								target="_blank"
+								rel="noopener noreferrer"
 								variant="hero"
 								size="icon"
 								className="cursor-pointer transition-colors duration-200 hover:bg-primary hover:text-primary-foreground"
@@ -84,8 +95,8 @@ const Footer = () => {
 								{ name: "Home", path: "/" },
 								{ name: "All Products", path: "/products" },
 								{
-									name: "Hair Extensions",
-									path: "/products?category=extensions",
+									name: "Bundles",
+									path: "/products?category=bundles",
 								},
 								{ name: "Wigs", path: "/products?category=wigs" },
 								{ name: "Hair Care", path: "/products?category=care" },
@@ -136,21 +147,18 @@ const Footer = () => {
 								<span className="text-sm text-muted-foreground">
 									+234(0) 906294457
 								</span>
-								
 							</div>
 							<div className="flex items-center ml-6">
 								{/* <HiOutlinePhone className="h-4 w-4 text-primary" /> */}
 								<span className="text-sm text-muted-foreground">
 									+234(0) 8168329244
 								</span>
-								
 							</div>
 							<div className="flex items-center ml-6">
 								{/* <HiOutlinePhone className="h-4 w-4 text-primary" /> */}
 								<span className="text-sm text-muted-foreground">
 									+234(0) 7068450715
 								</span>
-								
 							</div>
 							<div className="flex items-center space-x-3">
 								<HiOutlineMail className="h-4 w-4 text-primary" />
@@ -161,7 +169,8 @@ const Footer = () => {
 							<div className="flex items-center space-x-3">
 								<HiOutlineLocationMarker className="h-4 w-4 text-primary" />
 								<span className="text-sm text-muted-foreground">
-									Kev Plaza Road 2B 34B Ikota Villa estate, Lekki Lagos, Nigeria.
+									Kev Plaza Road 2B 34B Ikota Villa estate, Lekki Lagos,
+									Nigeria.
 								</span>
 							</div>
 						</div>

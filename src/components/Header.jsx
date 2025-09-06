@@ -24,7 +24,8 @@ const Header = () => {
 	const { cartItems } = useCart();
 	const { user, logout, isAdmin } = useAuth();
 
-	const cartCount = cartItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+	const cartCount =
+		cartItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
 	const isActivePage = (path) => location.pathname === path;
 
@@ -39,7 +40,7 @@ const Header = () => {
 	const handleLogout = async () => {
 		await logout();
 		setShowUserMenu(false);
-		navigate('/');
+		navigate("/");
 	};
 
 	return (
@@ -48,10 +49,12 @@ const Header = () => {
 				<div className="flex items-center justify-between h-16 lg:h-20">
 					{/* Logo */}
 					<Link to="/" className="flex items-center space-x-2 group">
-						<div className="bg-gradient-luxury p-2 rounded-lg shadow-glow group-hover:shadow-luxury transition-all duration-300">
-							<span className="text-primary-foreground font-bold text-lg">
-								H
-							</span>
+						<div className="bg-gradient-luxury rounded-full border-4 border-amber-500 shadow-glow group-hover:shadow-luxury transition-all duration-300 w-12 h-12 overflow-hidden">
+							<img
+								src="/Hair.png"
+								alt="brand logo"
+								className="w-full h-full object-cover"
+							/>
 						</div>
 						<div>
 							<h1 className="text-xl lg:text-2xl font-bold text-gradient">
@@ -85,11 +88,11 @@ const Header = () => {
 					<div className="flex items-center space-x-4 relative">
 						{/* Admin Dashboard Icon - Only show if user is admin */}
 						{isAdmin && (
-							<Button 
-								variant="ghost" 
-								size="icon" 
+							<Button
+								variant="ghost"
+								size="icon"
 								className="hidden sm:flex text-primary hover:text-primary-dark hover:bg-accent-muted"
-								onClick={() => navigate('/admin')}
+								onClick={() => navigate("/admin")}
 								title="Admin Dashboard"
 							>
 								<FaCog className="h-5 w-5" />
@@ -103,13 +106,15 @@ const Header = () => {
 						<div
 							className="relative"
 							onMouseEnter={() => setShowUserMenu(true)}
-							onMouseLeave={() => setTimeout(() => {
-								setShowUserMenu(false)
-							}, 5000)}
+							onMouseLeave={() =>
+								setTimeout(() => {
+									setShowUserMenu(false);
+								}, 5000)
+							}
 						>
-							<Button 
-								variant="ghost" 
-								size="icon" 
+							<Button
+								variant="ghost"
+								size="icon"
 								onClick={() => setShowUserMenu(!showUserMenu)}
 								className="relative hover:bg-accent-muted"
 							>
@@ -140,8 +145,8 @@ const Header = () => {
 												</div>
 
 												{/* Menu Items */}
-												<Link 
-													to="/account" 
+												<Link
+													to="/account"
 													className="flex items-center space-x-3 px-4 py-2 text-sm text-foreground hover:bg-accent-muted transition-colors"
 													onClick={() => setShowUserMenu(false)}
 												>
@@ -150,8 +155,8 @@ const Header = () => {
 												</Link>
 
 												{isAdmin && (
-													<Link 
-														to="/admin" 
+													<Link
+														to="/admin"
 														className="flex items-center space-x-3 px-4 py-2 text-sm text-foreground hover:bg-accent-muted transition-colors"
 														onClick={() => setShowUserMenu(false)}
 													>
@@ -162,7 +167,7 @@ const Header = () => {
 
 												<hr className="border-border my-1" />
 
-												<button 
+												<button
 													onClick={handleLogout}
 													className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
 												>
@@ -171,8 +176,8 @@ const Header = () => {
 												</button>
 											</>
 										) : (
-											<Link 
-												to="/login" 
+											<Link
+												to="/login"
 												className="flex items-center space-x-3 px-4 py-2 text-sm text-foreground hover:bg-accent-muted transition-colors"
 												onClick={() => setShowUserMenu(false)}
 											>
@@ -186,10 +191,10 @@ const Header = () => {
 						</div>
 
 						{/* Cart */}
-						<Button 
-							onClick={() => navigate("/cart")} 
-							variant="ghost" 
-							size="icon" 
+						<Button
+							onClick={() => navigate("/cart")}
+							variant="ghost"
+							size="icon"
 							className="relative hover:bg-accent-muted"
 						>
 							<FaShoppingCart className="h-5 w-5" />
@@ -201,13 +206,17 @@ const Header = () => {
 						</Button>
 
 						{/* Mobile Menu Toggle */}
-						<Button 
-							variant="ghost" 
-							size="icon" 
-							className="lg:hidden hover:bg-accent-muted" 
+						<Button
+							variant="ghost"
+							size="icon"
+							className="lg:hidden hover:bg-accent-muted"
 							onClick={() => setIsMenuOpen(!isMenuOpen)}
 						>
-							{isMenuOpen ? <FaTimes className="h-5 w-5" /> : <FaBars className="h-5 w-5" />}
+							{isMenuOpen ? (
+								<FaTimes className="h-5 w-5" />
+							) : (
+								<FaBars className="h-5 w-5" />
+							)}
 						</Button>
 					</div>
 				</div>
@@ -250,7 +259,10 @@ const Header = () => {
 								{user ? (
 									<>
 										<div className="px-4 py-2 text-xs text-muted-foreground">
-											Logged in as <span className="font-medium text-foreground">@{user.username}</span>
+											Logged in as{" "}
+											<span className="font-medium text-foreground">
+												@{user.username}
+											</span>
 										</div>
 										<Link
 											to="/account"

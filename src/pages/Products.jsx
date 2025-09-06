@@ -229,9 +229,9 @@ const Products = () => {
                   }`}
                 >
                   <img
-                    src={product.cover_image || "/placeholder.png"}
+                    src={product.cover_image || ""}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-500"
                   />
                   {!product.in_stock && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">

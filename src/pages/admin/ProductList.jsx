@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { Search, Pencil, Trash2 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import toast from "react-hot-toast";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -12,6 +14,7 @@ const ProductList = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
+  const { apiFetch } = useAuth();
 
  
   const fetchProducts = async (page = 1, search = "") => {
@@ -22,7 +25,6 @@ const ProductList = () => {
       );
       if (!res.ok) throw new Error("Failed to fetch products");
       const data = await res.json();
-			console.log(data)
 
       // Handle both array and object response
       const products = data.data || [];
@@ -42,13 +44,14 @@ const ProductList = () => {
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
     try {
-      const res = await fetch(`${API_URL}/api/products/${id}`, {
+      const res = await apiFetch(`${API_URL}/api/products/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete product");
+      toast.success("Product was deleted successfully!")
       setProducts(products.filter((p) => p.id !== id));
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 

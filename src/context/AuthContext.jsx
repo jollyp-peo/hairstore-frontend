@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const AuthContext = createContext();
@@ -15,7 +15,10 @@ export const AuthProvider = ({ children }) => {
 
   // --- Helpers to persist tokens ---
   const saveSession = (data) => {
-    if (data.user) setUser(data.user);
+    if (data.user) {
+      setUser(data.user);
+      localStorage.setItem("user", JSON.stringify(data.user));
+    }
     if (data.accessToken) {
       setAccessToken(data.accessToken);
       localStorage.setItem("accessToken", data.accessToken);
@@ -24,7 +27,6 @@ export const AuthProvider = ({ children }) => {
       setRefreshToken(data.refreshToken);
       localStorage.setItem("refreshToken", data.refreshToken);
     }
-    if (data.user) localStorage.setItem("user", JSON.stringify(data.user));
   };
 
   const clearSession = () => {
@@ -67,7 +69,6 @@ export const AuthProvider = ({ children }) => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Signup failed");
-
       saveSession(data);
       return { success: true };
     } catch (err) {
@@ -78,7 +79,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     if (!refreshToken) return false;
     try {
       const res = await fetch(`${API_URL}/api/auth/refresh`, {
@@ -95,7 +96,7 @@ export const AuthProvider = ({ children }) => {
       clearSession();
       return false;
     }
-  };
+  }, [refreshToken]);
 
   const logout = async () => {
     try {
@@ -113,31 +114,59 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // --- Auto refresh before expiry ---
+  // --- Auto refresh every 10 min ---
   useEffect(() => {
-    let interval;
-    if (refreshToken) {
-      interval = setInterval(() => refresh(), 10 * 60 * 1000); // every 10 mins
-    }
+    if (!refreshToken) return;
+    const interval = setInterval(() => refresh(), 10 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [refreshToken]);
+  }, [refreshToken, refresh]);
+
+  // --- Auto-refreshing fetch wrapper ---
+  const apiFetch = useCallback(
+    async (url, options = {}) => {
+      let res = await fetch(url, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
+        },
+      });
+
+      if (res.status === 401) {
+        const refreshed = await refresh();
+        if (!refreshed) {
+          throw new Error("Session expired. Please log in again.");
+        }
+        res = await fetch(url, {
+          ...options,
+          headers: {
+            ...(options.headers || {}),
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        });
+      }
+
+      return res;
+    },
+    [accessToken, refresh]
+  );
 
   // --- Role helpers ---
-  const isAdmin = useMemo(() => {
-    return user?.role === "admin"; 
-  }, [user]);
+  const isAdmin = useMemo(() => user?.role === "admin", [user]);
 
   return (
     <AuthContext.Provider
       value={{
         user,
         accessToken,
+        refreshToken,
         loading,
         login,
         signup,
         refresh,
         logout,
         isAdmin,
+        apiFetch, // use instead of fetch
       }}
     >
       {children}

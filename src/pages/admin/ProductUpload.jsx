@@ -9,7 +9,7 @@ import { Button } from "../../components/ui/Button";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const ProductUpload = () => {
-	const { accessToken } = useAuth();
+	const { accessToken, apiFetch } = useAuth();
 
 	const [form, setForm] = useState({
 		name: "",
@@ -23,7 +23,7 @@ const ProductUpload = () => {
 			features: [""],
 			specifications: [{ key: "", value: "" }],
 		},
-		image: null, // ✅ renamed from cover → image
+		image: null, 
 		variants: [
 			{
 				color: "",
@@ -175,7 +175,7 @@ const ProductUpload = () => {
 
 			formData.append("details", JSON.stringify(detailsForDB));
 
-			// ✅ send as "image" not "cover"
+			// send as "image" not "cover"
 			if (form.image) {
 				formData.append("image", form.image);
 			}
@@ -194,7 +194,7 @@ const ProductUpload = () => {
 
 			formData.append("variants", JSON.stringify(variantsData));
 
-			// ✅ add variant images under "variants"
+			//add variant images under "variants"
 			form.variants.forEach((v) => {
 				if (v.image) {
 					formData.append("variants", v.image);
@@ -202,11 +202,8 @@ const ProductUpload = () => {
 			});
 
 			setLoading(true);
-			const response = await fetch(`${API_URL}/api/products`, {
+			const response = await apiFetch(`${API_URL}/api/products`, {
 				method: "POST",
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-				},
 				body: formData,
 			});
 
@@ -440,13 +437,13 @@ const ProductUpload = () => {
 						<Button
 							type="button"
 							onClick={() => removeVariant(i)}
-							className="text-red-500 hover:underline"
+							className="text-white bg-red-500 hover:underline"
 						>
 							Remove Variant
 						</Button>
 					</div>
 				))}
-				<Button type="button" onClick={addVariant}>
+				<Button type="button" variant="luxury" onClick={addVariant}>
 					+ Add Variant
 				</Button>
 			</div>

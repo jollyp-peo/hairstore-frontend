@@ -29,11 +29,23 @@ const sizeStyles = {
 };
 
 const Button = React.forwardRef(
-  ({ className, variant = "default", size = "default", children, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Link : "button";
+  ({ className, variant = "default", size = "default", children, to, href, ...props }, ref) => {
+    // const Comp = asChild ? Link : "button";
+    let Comp = "button";
+
+    if (to) {
+      Comp = Link; // React Router link
+    }
+
+    if (href) {
+      Comp = "a"; // external link
+    }
+
     return (
       <Comp
         ref={ref}
+        href={href}
+        to={to}
         className={twMerge(buttonBase, variantStyles[variant], sizeStyles[size], className)}
         {...props}
       >

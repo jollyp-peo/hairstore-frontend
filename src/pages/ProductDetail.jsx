@@ -1,4 +1,3 @@
-// pages/ProductDetail.jsx
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -7,12 +6,10 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  CheckCircle,
-  AlertCircle,
-  X,
 } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { useCart } from "../context/CartContext";
+import toast, { Toaster } from "react-hot-toast";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -37,10 +34,6 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [activeTab, setActiveTab] = useState("description");
 
-  // toast state
-  const [toast, setToast] = useState({ open: false, type: "success", message: "" });
-  const toastTimerRef = useRef(null);
-
   const scrollRef = useRef(null);
 
   const scrollThumbnails = (dir) => {
@@ -52,21 +45,6 @@ export default function ProductDetail() {
       });
     }
   };
-
-  // helper: show toast
-  const showToast = (message, type = "success") => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ open: true, type, message });
-    toastTimerRef.current = setTimeout(() => {
-      setToast((t) => ({ ...t, open: false }));
-    }, 3000);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
 
   // fetch product
   useEffect(() => {
@@ -83,7 +61,7 @@ export default function ProductDetail() {
         setProduct(result.data);
       } catch (err) {
         console.error("Failed to load product", err);
-        showToast("Failed to load product. Please try again.", "error");
+        toast.error("Failed to load product. Please try again.");
       }
     };
 
@@ -170,15 +148,14 @@ export default function ProductDetail() {
   // Add to Cart
   const handleAddToCart = () => {
     if (!selectedVariant) {
-      showToast("Please select a valid Color, Length, and Lace.", "error");
+      toast.error("Please select a valid Color, Length, and Lace.");
       return;
     }
 
     addToCart(product, { variant: selectedVariant, quantity });
 
-    showToast(
-      `Added to cart: ${product.name} — ${selectedVariant.color || "-"}, ${selectedVariant.length || "-"}, ${selectedVariant.lace || "-"} × ${quantity}`,
-      "success"
+    toast.success(
+      `Added to cart: ${product.name}`
     );
   };
 
@@ -188,11 +165,13 @@ export default function ProductDetail() {
     setSelectedLace(null);
     setSelectedVariant(null);
     setQuantity(1);
-    showToast("Selections cleared.", "success");
+    toast.success("Selections cleared.");
   };
 
   return (
     <div className="min-h-screen bg-background">
+      <Toaster position="top-right" />
+
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 lg:px-8 py-6">
         <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -224,7 +203,7 @@ export default function ProductDetail() {
               <img
                 src={allImages[selectedImage]}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-top"
               />
             </div>
 
@@ -548,8 +527,10 @@ export default function ProductDetail() {
 
               {activeTab === "specs" && (
                 <ul>
-                  {product.details?.specifications?.map((s, i) => (
-                    <li key={i}>{s}</li>
+                  {Object.entries(product.details.specifications).map(([k, v], i) => (
+                    <li key={i}>
+                      <strong>{k}:</strong> {v}
+                    </li>
                   ))}
                 </ul>
               )}
@@ -563,27 +544,6 @@ export default function ProductDetail() {
           </div>
         </div>
       </div>
-
-      {/* Toast */}
-      {toast.open && (
-        <div
-          className={`fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 text-sm ${
-            toast.type === "success"
-              ? "bg-green-600 text-white"
-              : "bg-red-600 text-white"
-          }`}
-        >
-          {toast.type === "success" ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <AlertCircle className="h-4 w-4" />
-          )}
-          <span>{toast.message}</span>
-          <button onClick={() => setToast((t) => ({ ...t, open: false }))}>
-            <X className="h-4 w-4 ml-2" />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

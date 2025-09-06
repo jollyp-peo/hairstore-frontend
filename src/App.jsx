@@ -42,7 +42,6 @@ const App = () => {
 						<Route path="/products/:id" element={<ProductDetail />} />
 						<Route path="/cart" element={<Cart />} />
 						<Route path="/payment/callback" element={<PaymentCallback />} />
-						<Route path="/admin" element={<AdminDashboard />} />
 						<Route path="/admin/products" element={<ProductsPage />} />
 						<Route path="/admin/products/edit/:id" element={<ProductEdit />} />
 
@@ -56,7 +55,7 @@ const App = () => {
 							}
 						/>
 
-						{/* Admin
+						{/* Admin */}
 						<Route
 							path="/admin/*"
 							element={
@@ -64,7 +63,7 @@ const App = () => {
 									<AdminDashboard />
 								</AdminRoute>
 							}
-						/> */}
+						/>
 
 						{/* Catch all */}
 						<Route path="*" element={<NotFound />} />
