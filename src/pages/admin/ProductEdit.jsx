@@ -224,9 +224,9 @@ const ProductEdit = () => {
 			}));
 			formData.append("variants", JSON.stringify(variantsData));
 
-			form.variants.forEach((v, i) => {
+			form.variants.forEach((v) => {
 				if (v.image && v.image instanceof File) {
-					formData.append(`variant_image_${i}`, v.image);
+					formData.append("variants", v.image);
 				}
 			});
 

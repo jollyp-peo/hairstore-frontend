@@ -15,10 +15,10 @@ const Products = () => {
   const [viewMode, setViewMode] = useState("grid");
   const [loading, setLoading] = useState(false);
 
-  // pagination
+  // pagination 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 12;
 
   const { addToCart } = useCart();
   const navigate = useNavigate();
