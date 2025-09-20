@@ -228,6 +228,7 @@ export default function ProductDetail() {
                       key={variant.id}
                       className="border border-border rounded-lg p-4 hover:border-primary transition-colors"
                     >
+                      {/* Variant Info: Image + Details */}
                       <div className="flex items-center gap-4">
                         {/* Variant Thumbnail */}
                         <div className="flex-shrink-0">
@@ -277,39 +278,40 @@ export default function ProductDetail() {
                             )}
                           </div>
                         </div>
+                      </div>
 
-                        {/* Quantity & Add to Cart */}
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() =>
-                              updateVariantQuantity(variant.id, -1)
-                            }
-                            disabled={quantity === 0}
-                            className="w-8 h-8 border border-border rounded-lg flex items-center justify-center hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </button>
-                          <span className="w-8 text-center font-medium">
-                            {quantity}
-                          </span>
-                          <button
-                            onClick={() => updateVariantQuantity(variant.id, 1)}
-                            className="w-8 h-8 border border-border rounded-lg flex items-center justify-center hover:border-primary"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </button>
+                      {/* Divider */}
+                      <div className="my-4 border-t border-border"></div>
 
-                          <Button
-                            variant="luxury"
-                            size="sm"
-                            onClick={() => handleAddToCart(variant)}
-                            disabled={quantity === 0}
-                            className="ml-2"
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-1" />
-                            Add
-                          </Button>
-                        </div>
+                      {/* Quantity & Add to Cart BELOW the card */}
+                      <div className="flex items-center gap-3 justify-start">
+                        <button
+                          onClick={() => updateVariantQuantity(variant.id, -1)}
+                          disabled={quantity === 0}
+                          className="w-8 h-8 border border-border rounded-lg flex items-center justify-center hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="w-8 text-center font-medium">
+                          {quantity}
+                        </span>
+                        <button
+                          onClick={() => updateVariantQuantity(variant.id, 1)}
+                          className="w-8 h-8 border border-border rounded-lg flex items-center justify-center hover:border-primary"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+
+                        <Button
+                          variant="luxury"
+                          size="sm"
+                          onClick={() => handleAddToCart(variant)}
+                          disabled={quantity === 0}
+                          className="ml-2"
+                        >
+                          <ShoppingCart className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
                       </div>
                     </div>
                   );
