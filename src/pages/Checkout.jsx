@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, CheckCircle, Lock, Truck } from "lucide-react";
+import { ArrowLeft, Lock, CheckCircle, Truck } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -15,97 +15,79 @@ const Checkout = () => {
   const { accessToken, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // shipping snapshot (from default or added address)
   const [selectedAddress, setSelectedAddress] = useState(null);
 
   const orderItems = cartItems;
   const subtotal = orderItems.reduce(
-    (acc, item) => acc + ((item.variant?.price || 0) * item.quantity),
+    (acc, item) => acc + (item.variant?.price || 0) * item.quantity,
     0
   );
   const shippingCost = 0;
   const tax = subtotal * 0.01;
   const total = subtotal + shippingCost + tax;
 
-  // load default address on mount
+  
+
+  // Load default address
   useEffect(() => {
     if (!accessToken) return;
     (async () => {
       try {
         const list = await fetchAddresses(accessToken);
         const defaultAddr = list.find((a) => a.is_default) || list[0];
-        if (defaultAddr) {
-          setSelectedAddress(defaultAddr);
-        }
+        if (defaultAddr) setSelectedAddress(defaultAddr);
       } catch (err) {
         console.error("Error fetching addresses:", err);
       }
     })();
   }, [accessToken]);
 
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+ const handlePlaceOrder = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
 
-    if (!selectedAddress) {
-      setError("Please add a shipping address before checkout.");
-      setLoading(false);
-      return;
-    }
+  try {
+    if (!selectedAddress) throw new Error("Please add a shipping address before checkout");
+    if (!accessToken) throw new Error("You must be logged in to checkout");
 
-    try {
-      if (!accessToken) throw new Error("You must be logged in to checkout");
+    const shippingSnapshot = { ...selectedAddress, email: selectedAddress.email || user?.email };
 
-      const shippingSnapshot = {
-        first_name: selectedAddress.first_name,
-        last_name: selectedAddress.last_name,
-        email: selectedAddress.email || user?.email,
-        phone: selectedAddress.phone,
-        address: selectedAddress.address,
-        city: selectedAddress.city,
-        state: selectedAddress.state,
-        zip_code: selectedAddress.zip_code,
-        country: selectedAddress.country,
-      };
+    const body = {
+      amount: total,
+      email: shippingSnapshot.email,
+      currency: "NGN",
+      cart: orderItems,
+      meta: { name: `${shippingSnapshot.first_name} ${shippingSnapshot.last_name}` },
+      address_id: selectedAddress.id,
+      shipping: shippingSnapshot,
+    };
 
-      const body = {
-        amount: total,
-        email: shippingSnapshot.email,
-        currency: "NGN",
-        cart: orderItems,
-        meta: {
-          name: `${shippingSnapshot.first_name} ${shippingSnapshot.last_name}`,
-        },
-        address_id: selectedAddress.id,
-        shipping: shippingSnapshot,
-      };
+    // Initialize payment on backend
+    const res = await fetch(`${API_URL}/api/payments/init`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(body),
+    });
 
-      const res = await fetch(`${API_URL}/api/payments/paystack/initialize`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(body),
-      });
+    const { data } = await res.json();
+    if (!res.ok || !data?.checkoutUrl) throw new Error("Failed to initialize payment");
 
-      const data = await res.json();
+    // Redirect to Monnify checkout page
+    window.location.href = data.checkoutUrl;
 
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to initialize payment");
-      }
+  } catch (err) {
+    console.error("Checkout error:", err);
+    setError(err.message || "Checkout failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
-      // redirect to gateway
-      window.location.href = data.authorization_url;
-    } catch (err) {
-      console.error("Checkout error:", err);
-      setError(err.message || "Checkout failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,11 +105,8 @@ const Checkout = () => {
 
       <div className="container mx-auto px-4 lg:px-8 py-8">
         <Button variant="ghost" className="mb-6">
-          <Link to="/cart">
-            <span className="flex items-center">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Cart
-            </span>
+          <Link to="/cart" className="flex items-center">
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Cart
           </Link>
         </Button>
 
@@ -142,7 +121,6 @@ const Checkout = () => {
                   </span>
                   Shipping Information
                 </h2>
-
                 <CheckoutAddresses
                   onSelectAddress={setSelectedAddress}
                   selectedAddress={selectedAddress}
@@ -156,7 +134,7 @@ const Checkout = () => {
                 </h2>
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <p className="text-sm font-medium text-center text-green-700 dark:text-green-400">
-                    Click below to proceed to our secure Paystack payment
+                    Click below to proceed to our secure Monnify payment
                     gateway.
                   </p>
                 </div>
@@ -175,10 +153,10 @@ const Checkout = () => {
               >
                 {loading ? (
                   <>
-                    <Spinner size="sm" className="mr-2" /> Redirecting...
+                    <Spinner size="sm" className="mr-2" /> Processing...
                   </>
                 ) : (
-                  `Pay with Paystack - ${total.toLocaleString("en-NG", {
+                  `Pay with Monnify - ${total.toLocaleString("en-NG", {
                     style: "currency",
                     currency: "NGN",
                   })}`
@@ -207,7 +185,9 @@ const Checkout = () => {
                           {item.variant?.color && (
                             <p>Color: {item.variant.color}</p>
                           )}
-                          {item.variant?.size && <p>Size: {item.variant.size}</p>}
+                          {item.variant?.size && (
+                            <p>Size: {item.variant.size}</p>
+                          )}
                         </div>
                       </div>
                       <div className="text-sm font-medium">

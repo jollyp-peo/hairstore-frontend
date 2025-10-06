@@ -4,6 +4,7 @@ import { CheckCircle, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import Spinner from "../components/Spinner";
 import { Button } from "../components/ui/Button";
+import { useCart } from "../context/CartContext"; // import useCart to access clearCart
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -17,77 +18,80 @@ export default function PaymentCallback() {
   const [status, setStatus] = useState("Verifying payment...");
   const [isPaid, setIsPaid] = useState(false);
   const [reference, setReference] = useState(null);
+  const { clearCart } = useCart(); // access clearCart function
 
-  useEffect(() => {
-    const ref = searchParams.get("reference");
-    setReference(ref);
+useEffect(() => {
+  const ref = searchParams.get("reference")?.split("?")[0]; 
+  const autoVerify = searchParams.get("autoVerify") === "true";
+  setReference(ref);
 
-    if (!ref) {
-      setStatus("No payment reference found");
-      setIsVerifying(false);
-      setTimeout(() => navigate("/cart", { replace: true }), 3000);
-      return;
-    }
+  if (!ref) {
+    setStatus("No payment reference found");
+    setIsVerifying(false);
+    setTimeout(() => navigate("/cart", { replace: true }), 3000);
+    return;
+  }
 
-    const verifyPayment = async () => {
-      try {
-        let token = accessToken;
-        if (!token) {
-          const refreshed = await refresh();
-          if (!refreshed) {
-            setStatus("Session expired. Redirecting to login...");
-            setTimeout(() => navigate("/login", { replace: true }), 3000);
-            return;
-          }
-          token = accessToken; // context updated after refresh()
+  let intervalId;
+
+  const verifyPayment = async () => {
+    try {
+      let token = accessToken;
+      if (!token) {
+        const refreshed = await refresh();
+        if (!refreshed) {
+          setStatus("Session expired. Redirecting to login...");
+          setTimeout(() => navigate("/login", { replace: true }), 3000);
+          return;
         }
-
-        setStatus("Verifying payment with Paystack...");
-
-        const res = await fetch(
-          `${API_URL}/api/payments/paystack/verify?reference=${encodeURIComponent(
-            ref
-          )}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          }
-        );
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || `HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-
-        if (data.success && data.paid) {
-          setIsPaid(true);
-          setStatus("Payment successful!");
-          localStorage.removeItem("pending_payment_ref");
-        } else if (data.success && !data.paid) {
-          setStatus("Payment not completed. Please try again.");
-          setTimeout(() => navigate("/cart", { replace: true }), 3000);
-        } else {
-          setStatus("Payment verification failed");
-          setTimeout(() => navigate("/cart", { replace: true }), 3000);
-        }
-      } catch (err) {
-        setStatus(`Error verifying payment: ${err.message}`);
-        setTimeout(() => navigate("/cart", { replace: true }), 2000);
-      } finally {
-        setIsVerifying(false);
+        token = accessToken;
       }
-    };
 
+      const res = await fetch(
+        `${API_URL}/api/payments/verify?reference=${encodeURIComponent(ref)}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (data.success && data.paid) {
+        setIsPaid(true);
+        setStatus("Payment successful!");
+        localStorage.removeItem("pending_payment_ref");
+
+        // Clear cart via context
+        clearCart();
+
+        if (intervalId) clearInterval(intervalId); // stop polling if used
+      } else {
+        setStatus(autoVerify ? "Verifying payment..." : "Waiting for payment confirmation...");
+      }
+    } catch (err) {
+      setStatus(`Error verifying payment: ${err.message}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  if (autoVerify) {
     verifyPayment();
-  }, [searchParams, navigate, accessToken, refresh]);
+  } else {
+    intervalId = setInterval(verifyPayment, 3000);
+    verifyPayment();
+  }
 
-  // Show success screen if paid
+  return () => {
+    if (intervalId) clearInterval(intervalId);
+  };
+}, [searchParams, navigate, accessToken, refresh, clearCart]);
+
+
+
   if (!isVerifying && isPaid) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -98,14 +102,14 @@ export default function PaymentCallback() {
           <h1 className="text-3xl font-bold mb-4">Order Confirmed!</h1>
           <p className="text-muted-foreground mb-6">
             Thank you for your purchase. Your order{" "}
-            <strong>{reference}</strong> has been confirmed and will be
-            processed within 1-3 business days.
+            <strong>{reference}</strong> has been confirmed and will be processed
+            within 1-3 business days.
           </p>
           <div className="space-y-3">
-            <Button variant="luxury" className="w-full" asChild>
+            <Button variant="luxury" className="w-full">
               <Link to="/products">Continue Shopping</Link>
             </Button>
-            <Button variant="outline" className="w-full" asChild>
+            <Button variant="outline" className="w-full">
               <Link to="/orders">Track Your Order</Link>
             </Button>
           </div>
@@ -114,7 +118,6 @@ export default function PaymentCallback() {
     );
   }
 
-  //Default state (verifying or failed)
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="max-w-md mx-auto text-center p-8">
